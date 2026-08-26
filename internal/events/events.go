@@ -77,6 +77,9 @@ func (b *Bus) List(subject string, from uint64) []Event {
 func clone(in map[string]any) map[string]any {
 	out := map[string]any{}
 	for k, v := range in {
+		if nested, ok := v.(map[string]any); ok {
+			v = clone(nested)
+		}
 		out[k] = v
 	}
 	return out

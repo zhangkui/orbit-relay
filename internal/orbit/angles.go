@@ -13,7 +13,7 @@ func NormalizeDegrees(v float64) float64 {
 	return v
 }
 func AngularDistance(a, b float64) float64 {
-	d := math.Abs(a - b)
+	d := math.Abs(NormalizeDegrees(a) - NormalizeDegrees(b))
 	if d > 180 {
 		d = 360 - d
 	}

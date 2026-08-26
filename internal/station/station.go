@@ -123,7 +123,7 @@ func (m *Manager) Available(station, band string, at time.Time) []Antenna {
 	s := m.stations[station]
 	out := []Antenna{}
 	for _, a := range s.Antennas {
-		if a.Band == band && a.Mode != Offline && a.Mode != Fault && a.Health >= 0.5 && (a.LastContact.IsZero() || at.Sub(a.LastContact) <= 10*time.Minute) {
+		if a.Band == band && a.Mode != Offline && a.Mode != Fault && a.Health >= 0.5 && (a.LastContact.IsZero() || at.Sub(a.LastContact) < 10*time.Minute) {
 			out = append(out, a)
 		}
 	}

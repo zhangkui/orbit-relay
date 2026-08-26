@@ -23,7 +23,7 @@ func SequenceGaps(frames []model.TelemetryFrame) int {
 	sort.Slice(copyFrames, func(i, j int) bool { return copyFrames[i].Sequence < copyFrames[j].Sequence })
 	gaps := 0
 	for i := 1; i < len(copyFrames); i++ {
-		if copyFrames[i].Sequence > copyFrames[i-1].Sequence {
+		if copyFrames[i].Sequence > copyFrames[i-1].Sequence+1 {
 			gaps += int(copyFrames[i].Sequence - copyFrames[i-1].Sequence - 1)
 		}
 	}

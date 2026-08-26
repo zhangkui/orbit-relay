@@ -65,7 +65,7 @@ func Validate(c Config) error {
 }
 func HasBand(c Config, band string) bool {
 	for _, x := range c.AllowedBands {
-		if x == band {
+		if strings.EqualFold(x, band) {
 			return true
 		}
 	}

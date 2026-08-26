@@ -55,7 +55,7 @@ func (s *Store) SaveMany(kind string, items map[string]any) error {
 	})
 }
 func (s *Store) Purge(kind string, before time.Time) (int64, error) {
-	res, err := s.db.Exec(`DELETE FROM records WHERE kind=? AND updated_at<=?`, kind, before.UTC().Format(time.RFC3339Nano))
+	res, err := s.db.Exec(`DELETE FROM records WHERE kind=? AND updated_at<?`, kind, before.UTC().Format(time.RFC3339Nano))
 	if err != nil {
 		return 0, err
 	}

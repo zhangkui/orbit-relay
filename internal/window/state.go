@@ -26,6 +26,6 @@ func Transition(w *model.ContactWindow, next string, now time.Time) error {
 	return nil
 }
 func CanQueue(w model.ContactWindow, now time.Time) bool {
-	return w.State == model.WindowActive && validation.InWindow(now, w.Start, w.End.Add(time.Second))
+	return w.State == model.WindowActive && validation.InWindow(now, w.Start, w.End)
 }
 func Duration(w model.ContactWindow) time.Duration { return w.End.Sub(w.Start) }

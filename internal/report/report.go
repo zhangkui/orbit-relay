@@ -38,7 +38,7 @@ func (b *Builder) Build(ctx context.Context, w model.ContactWindow, commands int
 		}
 	}
 	if len(frames) > 0 {
-		r.PacketLoss = float64(telemetry.SequenceGaps(frames)) / float64(len(frames))
+		r.PacketLoss = float64(telemetry.SequenceGaps(frames)) / float64(len(frames)+telemetry.SequenceGaps(frames))
 	}
 	return r, nil
 }

@@ -46,7 +46,7 @@ func Overlap(a, b model.ContactWindow) bool {
 	return a.StationID == b.StationID && a.Antenna == b.Antenna && a.Start.Before(b.End) && b.Start.Before(a.End)
 }
 func WaitUntil(ctx context.Context, t time.Time, c clock.Clock) error {
-	d := t.Sub(c.Now())
+	d := time.Until(t)
 	if d <= 0 {
 		return nil
 	}
