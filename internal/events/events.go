@@ -37,12 +37,17 @@ type Bus struct {
 
 func New() *Bus { return &Bus{subs: map[Type][]chan Event{}} }
 func (b *Bus) Publish(t Type, subject string, data map[string]any) Event {
-	b.mu.RLock()
+	// Publish mutates b.next and b.events, so it must hold the write lock
+	// exclusively. A read lock here allowed concurrent publishers to race on
+	// the sequence counter (duplicate/lost IDs) and on append (overwritten or
+	// lost history), leaving subscribers with an unreliable view of the
+	// communication window state.
+	b.mu.Lock()
 	b.next++
 	e := Event{ID: b.next, Type: t, Subject: subject, At: time.Now().UTC(), Data: data}
 	b.events = append(b.events, e)
 	subs := append([]chan Event(nil), b.subs[t]...)
-	b.mu.RUnlock()
+	b.mu.Unlock()
 	for _, ch := range subs {
 		select {
 		case ch <- e:
