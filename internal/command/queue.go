@@ -92,3 +92,36 @@ func (q *Queue) Send(ctx context.Context, id string, send func([]byte) error) er
 	}
 	return nil
 }
+// SendPacket sends a command packet whose content has already been prepared
+// (for example snapshotted by a batch). It encodes and sends exactly the
+// provided packet, so a later update to the queued command cannot change the
+// bytes that go on the wire. The live queue entry and repository are updated
+// with the resulting send state.
+func (q *Queue) SendPacket(ctx context.Context, p model.CommandPacket, send func([]byte) error) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	raw, err := protocol.EncodeCommand(p)
+	if err != nil {
+		return err
+	}
+	p.State = model.CommandSending
+	if err := send(raw); err != nil {
+		p.State = model.CommandFailed
+		p.Error = err.Error()
+		q.metrics.Add("commands.failed", 1)
+	} else {
+		now := time.Now().UTC()
+		p.State = model.CommandSent
+		p.SentAt = &now
+		q.metrics.Add("commands.sent", 1)
+	}
+	q.mu.Lock()
+	q.packets[p.ID] = p
+	q.mu.Unlock()
+	_ = q.repo.Put("command", p.ID, p)
+	if p.State == model.CommandFailed {
+		return fmt.Errorf("send command: %w", err)
+	}
+	return nil
+}

@@ -40,7 +40,20 @@ func (r *Runner) Create(id, window string, packets []model.CommandPacket) (Batch
 	if id == "" || window == "" || len(packets) == 0 {
 		return Batch{}, model.ErrInvalid
 	}
-	copyPackets := packets
+	// Deep-copy the prepared packets so the batch owns an independent snapshot:
+	// a later update to the original command (re-enqueue, mutated Arguments map)
+	// must not alter the content this batch has already prepared to send.
+	copyPackets := make([]model.CommandPacket, len(packets))
+	for i, p := range packets {
+		copyPackets[i] = p
+		if p.Arguments != nil {
+			args := make(map[string]string, len(p.Arguments))
+			for k, v := range p.Arguments {
+				args[k] = v
+			}
+			copyPackets[i].Arguments = args
+		}
+	}
 	sort.SliceStable(copyPackets, func(i, j int) bool { return copyPackets[i].Priority > copyPackets[j].Priority })
 	b := Batch{ID: id, WindowID: window, Packets: copyPackets, State: Planned, CreatedAt: time.Now().UTC()}
 	r.mu.Lock()
@@ -68,7 +81,9 @@ func (r *Runner) Run(ctx context.Context, id string, send func([]byte) error) er
 		if err := ctx.Err(); err != nil {
 			return r.fail(id, err)
 		}
-		if err := r.queue.Send(ctx, p.ID, send); err != nil {
+		// Send the prepared snapshot directly, so a concurrent update to the
+		// original command cannot change what this batch puts on the wire.
+		if err := r.queue.SendPacket(ctx, p, send); err != nil {
 			return r.fail(id, err)
 		}
 	}
