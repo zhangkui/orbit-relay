@@ -28,14 +28,13 @@ func (c *Collector) Ingest(ctx context.Context, frame model.TelemetryFrame) erro
 		return fmt.Errorf("validate telemetry: %w", err)
 	}
 	protocol.ApplyQuality(&frame)
-	c.mu.RLock()
+	c.mu.Lock()
+	defer c.mu.Unlock()
 	previous, ok := c.last[frame.SatelliteID]
 	if ok && frame.Sequence <= previous {
-		c.mu.Unlock()
 		return model.ErrSequence
 	}
 	c.last[frame.SatelliteID] = frame.Sequence
-	c.mu.RUnlock()
 	if err := c.repo.Put("telemetry", frame.ID, frame); err != nil {
 		return fmt.Errorf("store telemetry: %w", err)
 	}
