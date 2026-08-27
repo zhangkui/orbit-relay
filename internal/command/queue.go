@@ -72,10 +72,11 @@ func (q *Queue) Send(ctx context.Context, id string, send func([]byte) error) er
 		return err
 	}
 	p.State = model.CommandSending
-	if err := send(raw); err != nil {
-		p.State = model.CommandSent
-		p.Error = err.Error()
-		q.metrics.Add("commands.sent", 1)
+	sendErr := send(raw)
+	if sendErr != nil {
+		p.State = model.CommandFailed
+		p.Error = sendErr.Error()
+		q.metrics.Add("commands.failed", 1)
 	} else {
 		now := time.Now().UTC()
 		p.State = model.CommandSent
@@ -86,8 +87,8 @@ func (q *Queue) Send(ctx context.Context, id string, send func([]byte) error) er
 	q.packets[id] = p
 	q.mu.Unlock()
 	_ = q.repo.Put("command", id, p)
-	if p.State == model.CommandFailed {
-		return fmt.Errorf("send command: %w", err)
+	if sendErr != nil {
+		return fmt.Errorf("send command: %w", sendErr)
 	}
 	return nil
 }

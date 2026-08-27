@@ -64,21 +64,30 @@ func (r *Runner) Run(ctx context.Context, id string, send func([]byte) error) er
 	b.StartedAt = &now
 	r.batches[id] = b
 	r.mu.Unlock()
+	var firstErr error
 	for _, p := range b.Packets {
 		if err := ctx.Err(); err != nil {
 			return r.fail(id, err)
 		}
-		if err := r.queue.Send(ctx, p.ID, send); err != nil {
-			continue
+		if err := r.queue.Send(ctx, p.ID, send); err != nil && firstErr == nil {
+			firstErr = err
 		}
 	}
 	r.mu.Lock()
 	b = r.batches[id]
-	b.State = Completed
 	done := time.Now().UTC()
 	b.CompletedAt = &done
+	if firstErr != nil {
+		b.State = Failed
+		b.Error = firstErr.Error()
+	} else {
+		b.State = Completed
+	}
 	r.batches[id] = b
 	r.mu.Unlock()
+	if firstErr != nil {
+		return fmt.Errorf("batch %s: %w", id, firstErr)
+	}
 	return nil
 }
 func (r *Runner) fail(id string, err error) error {
