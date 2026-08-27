@@ -18,4 +18,4 @@ func Restore(r *repository.Repository) (map[string]model.ContactWindow, error) {
 	})
 	return out, err
 }
-func Ping(ctx context.Context) error { return context.Background().Err() }
+func Ping(ctx context.Context) error { return ctx.Err() }

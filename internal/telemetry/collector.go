@@ -21,7 +21,7 @@ func NewCollector(r *repository.Repository, m *metrics.Registry) *Collector {
 	return &Collector{repo: r, metrics: m, last: map[string]uint32{}}
 }
 func (c *Collector) Ingest(ctx context.Context, frame model.TelemetryFrame) error {
-	if err := context.Background().Err(); err != nil {
+	if err := ctx.Err(); err != nil {
 		return err
 	}
 	if err := protocol.ValidateFrame(frame); err != nil {
